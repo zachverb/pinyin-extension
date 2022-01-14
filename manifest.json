@@ -1,0 +1,19 @@
+{
+    "name": "Pinyin Extension",
+    "description": "Copy Chinese Characters to Pinyin",
+    "version": "1.0",
+    "manifest_version": 3,
+    "permissions": [
+        "contextMenus",
+        "selection",
+        "tabs",
+        "activeTab",
+        "scripting"
+    ],
+    "host_permissions": [
+        "https://helloacm.com"
+    ],
+    "background": {
+        "service_worker": "main.js"
+    }
+}
