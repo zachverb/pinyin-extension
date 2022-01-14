@@ -12,13 +12,12 @@ chrome.contextMenus.create({
 
 chrome.contextMenus.onClicked.addListener(function ({ selectionText }) {
     fetch(`https://helloacm.com/api/pinyin/?cached&s=${selectionText}&t=1`).then((res) => res.json()).then(({ result }) => {
-        const tones = addTones(result);
-        console.log(tones);
+        const pinyin = addTones(result);
         getCurrentTab().then(function (tab) {
             chrome.scripting.executeScript({
                 target: { tabId: tab.id },
                 func: writeToClipboard,
-                args: [selectionText, tones],
+                args: [selectionText, pinyin],
             });
         });
     });
@@ -31,7 +30,6 @@ async function getCurrentTab() {
 }
 
 function writeToClipboard(originalText, pinyin) {
-    console.log(originalText)
     let input = document.createElement('textarea');
     document.body.appendChild(input);
     input.value = originalText + '\n' + pinyin;
@@ -41,7 +39,6 @@ function writeToClipboard(originalText, pinyin) {
 }
 
 function addTones(pinyin) {
-    console.log(pinyin);
     let str = '';
     for (let i = 0; i < pinyin.length; ++i) {
         ts = pinyin[i];
