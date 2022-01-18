@@ -1,20 +1,56 @@
-const tone_a = "āáǎà";
-const tone_o = "ōóǒò";
-const tone_e = "ēéěè";
-const tone_i = "īíǐì";
-const tone_u = "ǖǘǚǜü";
+import { ZhongwenDictionary } from './dict.js';
+
+const tone_a = 'āáǎàa';
+const tone_o = 'ōóǒòo';
+const tone_e = 'ēéěèe';
+const tone_i = 'īíǐìi';
+const tone_u = 'ūúǔùu';
+
+let dict = null;
+
+
+async function loadDictData() {
+    let wordDict = fetch(chrome.runtime.getURL(
+        'data/cedict_ts.u8')).then(r => r.text());
+    let wordIndex = fetch(chrome.runtime.getURL(
+        'data/cedict.idx')).then(r => r.text());
+    let grammarKeywords = fetch(chrome.runtime.getURL(
+        'data/grammarKeywordsMin.json')).then(r => r.json());
+
+    return Promise.all([wordDict, wordIndex, grammarKeywords]);
+}
+
+
+async function loadDictionary() {
+    let [wordDict, wordIndex, grammarKeywords] = await loadDictData();
+    return new ZhongwenDictionary(wordDict, wordIndex, grammarKeywords);
+}
+
 
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
         id: 'main',
         title: 'Copy to Pinyin',
-        contexts: ["selection"],  // ContextType
+        contexts: ['selection'],  // ContextType
     });
+
+    if (!dict) {
+        dict = loadDictionary().then(loadedDict => dict = loadedDict);
+    }
 });
 
 chrome.contextMenus.onClicked.addListener(function ({ selectionText }) {
-    fetch(`https://helloacm.com/api/pinyin/?cached&s=${selectionText}&t=1`).then((res) => res.json()).then(({ result }) => {
-        const pinyin = addTones(result);
+    if (dict) {
+        const pinyin = selectionText.split('').map(element => {
+            const res = dict.wordSearch(element);
+            if (!res) {
+                return element;
+            }
+            const definition = res.data[0][0]
+            var matches = definition.match(/\[(.*?)\]/);
+            return addTone(matches[1]) + '';
+        }).join(' ');
+
         getCurrentTab().then(function (tab) {
             chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -22,7 +58,7 @@ chrome.contextMenus.onClicked.addListener(function ({ selectionText }) {
                 args: [selectionText, pinyin],
             });
         });
-    });
+    }
 });
 
 async function getCurrentTab() {
@@ -36,38 +72,37 @@ function writeToClipboard(originalText, pinyin) {
     document.body.appendChild(input);
     input.value = originalText + '\n' + pinyin;
     input.select();
-    document.execCommand("copy");
+    document.execCommand('copy');
     input.remove();
 }
 
-function addTones(pinyin) {
-    let str = '';
-    for (let i = 0; i < pinyin.length; ++i) {
-        ts = pinyin[i];
-        const tone = ts[ts.length - 1];
-        ts = ts.split(',')[0].slice(0, -1);
-        str += ts[0].toUpperCase();
-        let ps = ts.substring(1);
-        // From http://www.pinyin.info/rules/where.html
-        if (ps.includes('ia') || ps.includes('ai') || ps.includes('ao') || ps.includes('ua')) {
-            ps = ps.replace('a', tone_a[tone - 1]);
-        } else if (ps.includes('ie') || ps.includes('ei') || ps.includes('ue')) {
-            ps = ps.replace('e', tone_e[tone - 1]);
-        } else if (ps.includes('ui')) {
-            ps = ps.replace('i', tone_i[tone - 1]);
-        } else if (ps.includes('io') || ps.includes('uo') || ps.includes('ou')) {
-            ps = ps.replace('o', tone_o[tone - 1]);
-        } else if (ps.includes('iu')) {
-            ps = ps.replace('u', tone_u[tone - 1]);
-        } else {
-            ps = ps.replace('a', tone_a[tone - 1]);
-            ps = ps.replace('e', tone_e[tone - 1]);
-            ps = ps.replace('i', tone_i[tone - 1]);
-            ps = ps.replace('o', tone_o[tone - 1]);
-            ps = ps.replace('u', tone_u[tone - 1]);
-        }
-        str += ps;
-        str += " ";
+function addTone(pinyin) {
+    if (!pinyin) {
+        return;
     }
-    return str.trim();
+    const tone = pinyin[pinyin.length - 1];
+    pinyin = pinyin.split(',')[0].slice(0, -1);
+    // From http://www.pinyin.info/rules/where.html
+    if (pinyin.includes('ia') || pinyin.includes('ai') || pinyin.includes('ao') || pinyin.includes('ua')) {
+        pinyin = pinyin.replace('a', tone_a[tone - 1]);
+    } else if (pinyin.includes('ie') || pinyin.includes('ei') || pinyin.includes('ue')) {
+        pinyin = pinyin.replace('e', tone_e[tone - 1]);
+    } else if (pinyin.includes('ui')) {
+        pinyin = pinyin.replace('i', tone_i[tone - 1]);
+    } else if (pinyin.includes('io') || pinyin.includes('uo') || pinyin.includes('ou')) {
+        pinyin = pinyin.replace('o', tone_o[tone - 1]);
+    } else if (pinyin.includes('iu')) {
+        pinyin = pinyin.replace('u', tone_u[tone - 1]);
+    } else {
+        pinyin = pinyin.replace('a', tone_a[tone - 1]);
+        pinyin = pinyin.replace('e', tone_e[tone - 1]);
+        pinyin = pinyin.replace('i', tone_i[tone - 1]);
+        pinyin = pinyin.replace('o', tone_o[tone - 1]);
+        pinyin = pinyin.replace('u', tone_u[tone - 1]);
+    }
+    return capitalizeFirstLetter(pinyin);
+}
+
+function capitalizeFirstLetter([first, ...rest]) {
+    return first.toUpperCase() + rest.filter(a => a).join('');
 }
