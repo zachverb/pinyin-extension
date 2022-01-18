@@ -27,7 +27,7 @@ async function loadDictionary() {
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
         id: 'main',
-        title: 'Copy to Pinyin',
+        title: 'Copy \'%s\' with Pinyin appended',
         contexts: ['selection'],  // ContextType
     });
 
