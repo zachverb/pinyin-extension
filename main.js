@@ -4,10 +4,12 @@ const tone_e = "ēéěè";
 const tone_i = "īíǐì";
 const tone_u = "ǖǘǚǜü";
 
-chrome.contextMenus.create({
-    id: 'main',
-    title: 'Copy to Pinyin',
-    contexts: ["selection"],  // ContextType
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.contextMenus.create({
+        id: 'main',
+        title: 'Copy to Pinyin',
+        contexts: ["selection"],  // ContextType
+    });
 });
 
 chrome.contextMenus.onClicked.addListener(function ({ selectionText }) {
@@ -24,13 +26,13 @@ chrome.contextMenus.onClicked.addListener(function ({ selectionText }) {
 });
 
 async function getCurrentTab() {
-    let queryOptions = { active: true, currentWindow: true };
-    let [tab] = await chrome.tabs.query(queryOptions);
+    const queryOptions = { active: true, currentWindow: true };
+    const [tab] = await chrome.tabs.query(queryOptions);
     return tab;
 }
 
 function writeToClipboard(originalText, pinyin) {
-    let input = document.createElement('textarea');
+    const input = document.createElement('textarea');
     document.body.appendChild(input);
     input.value = originalText + '\n' + pinyin;
     input.select();
@@ -52,11 +54,11 @@ function addTones(pinyin) {
         } else if (ps.includes('ie') || ps.includes('ei') || ps.includes('ue')) {
             ps = ps.replace('e', tone_e[tone - 1]);
         } else if (ps.includes('ui')) {
-            ps = ps.replace('i', tone_e[tone - 1]);
+            ps = ps.replace('i', tone_i[tone - 1]);
         } else if (ps.includes('io') || ps.includes('uo') || ps.includes('ou')) {
-            ps = ps.replace('o', tone_e[tone - 1]);
+            ps = ps.replace('o', tone_o[tone - 1]);
         } else if (ps.includes('iu')) {
-            ps = ps.replace('u', tone_e[tone - 1]);
+            ps = ps.replace('u', tone_u[tone - 1]);
         } else {
             ps = ps.replace('a', tone_a[tone - 1]);
             ps = ps.replace('e', tone_e[tone - 1]);
