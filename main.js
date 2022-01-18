@@ -8,7 +8,6 @@ const tone_u = 'ūúǔùu';
 
 let dict = null;
 
-
 async function loadDictData() {
     let wordDict = fetch(chrome.runtime.getURL(
         'data/cedict_ts.u8')).then(r => r.text());
@@ -20,12 +19,10 @@ async function loadDictData() {
     return Promise.all([wordDict, wordIndex, grammarKeywords]);
 }
 
-
 async function loadDictionary() {
     let [wordDict, wordIndex, grammarKeywords] = await loadDictData();
     return new ZhongwenDictionary(wordDict, wordIndex, grammarKeywords);
 }
-
 
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
@@ -100,9 +97,9 @@ function addTone(pinyin) {
         pinyin = pinyin.replace('o', tone_o[tone - 1]);
         pinyin = pinyin.replace('u', tone_u[tone - 1]);
     }
-    return capitalizeFirstLetter(pinyin);
+    return lowerFirstLetter(pinyin);
 }
 
-function capitalizeFirstLetter([first, ...rest]) {
-    return first.toUpperCase() + rest.filter(a => a).join('');
+function lowerFirstLetter([first, ...rest]) {
+    return first.toLowerCase() + rest.filter(a => a).join('');
 }
